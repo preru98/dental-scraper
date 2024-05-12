@@ -1,0 +1,8 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis
+    container_name: atlys-redis-dental
+    ports:
+      - "6380:6379"

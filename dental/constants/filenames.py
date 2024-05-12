@@ -1,0 +1,1 @@
+JSON_STORE = 'products.json'
