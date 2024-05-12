@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from dental.routers.dental import dental_router
-from dental.routers.health import health_router
+from dental.routers.dental import router as dental_router
+from dental.routers.health import router as health_router
 
 app = FastAPI()
 

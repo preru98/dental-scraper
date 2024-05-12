@@ -1,18 +1,9 @@
+from bs4 import BeautifulSoup
 from fastapi import Depends
-import redis
 from dental.dependencies.store import get_store
 from dental.dependencies.cache import get_cache
-
-from bs4 import BeautifulSoup
-from dental.integrations.target_website import get_html_content_for_page, download_media_content
-import os
-from dental.constants.filenames import JSON_STORE
-from dental.helpers.out_data import get_data_from_store
-from dental.helpers.store import log_data
-from dental.helpers.cache import update_products
-
-from constants.urls import DENTAL_BASE_URL
-from utils.download_utils import download_page, download_image
+from dental.constants.urls import DENTAL_BASE_URL
+from dental.utils.download_utils import download_page, download_image
 
 def get_products_on_page(page_number):
     print("Scraping page started- ", page_number, "___________________________")
@@ -27,7 +18,6 @@ def get_products_on_page(page_number):
 
     product_containers = soup.find_all("li", class_="product")
     for product in product_containers:
-        counter += 1
         product_price_element = product.find("span", class_="woocommerce-Price-amount")
         if not product_price_element:
             product_price = ""
@@ -51,7 +41,6 @@ def get_products_on_page(page_number):
             "product_name": image_alt,
             "product_price": product_price,
             "image_url": local_path,
-            "counter": counter,
             "page" : page_number
         })
     return product_details_list
@@ -59,31 +48,34 @@ def get_products_on_page(page_number):
 
 def get_products(page_start=1, page_end=1):
     product_details_list = []
+    print("Page range- ", page_start, " to ", page_end, "___________________________")
     for page in range(page_start, page_end+1):
         page_products = get_products_on_page(page)
         if page_products:
             product_details_list += page_products
     return product_details_list
     
-def start_scraping(page_start, page_end, cache = Depends(get_cache), store = Depends(get_store)):
-    all_products = get_products(page_start, page_end)
-    
+async def start_scraping(page_limit, cache, store, notifier):
+    all_products = get_products(page_start=1, page_end=page_limit)
+
     new_products = []
     updated_products = [] # Price is updated
     for product in all_products:
         product_name = product['product_name']
-        cached_product = cache.get(product_name)
+        cached_product = await cache.get(product_name)
         if not cached_product:
             new_products.append(product)
-            cache.add(product_name, product)
+            await cache.add(product_name, product)
 
         elif cached_product['product_price'] != product['product_price']:
             updated_products.append({'key': product_name, 'value': product})
             new_products.append(product)
-            cache.add(product_name, product)
+            await cache.add(product_name, product)
     
-    store.insert(new_products)
-    store.update(updated_products)
+    await store.insert(new_products)
+    await store.update(updated_products)
+
+    await notifier.notify(f"Fetched {len(new_products)} new products and updated {len(updated_products)} products")
 
     return len(all_products)
 
