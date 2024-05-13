@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import redis
+import os
 import json
 
 class Cache(ABC):
@@ -12,7 +13,7 @@ class Cache(ABC):
         pass
 
 class RedisCache(Cache):
-    def __init__(self, host='localhost', port=6379, db=0):
+    def __init__(self, host, port, db):
         self.redis_client = redis.Redis(host = host, port= port, db=db)
         print("Connected to Redis")
 
@@ -29,4 +30,7 @@ class RedisCache(Cache):
 
 async def get_cache() -> Cache:
     print("Returning cache")
-    return RedisCache()
+    redis_host = os.environ.get('REDIS_HOST', 'localhost')
+    redis_port = int(os.environ.get('REDIS_PORT', '6379'))
+
+    return RedisCache(host = redis_host, port = redis_port, db = 0)

@@ -68,7 +68,7 @@ async def start_scraping(page_limit, cache, store, notifier):
             await cache.add(product_name, product)
 
         elif cached_product['product_price'] != product['product_price']:
-            updated_products.append({'key': product_name, 'value': product})
+            updated_products.append(product)
             new_products.append(product)
             await cache.add(product_name, product)
     
@@ -79,5 +79,6 @@ async def start_scraping(page_limit, cache, store, notifier):
 
     return len(all_products)
 
-def get_all_products(store = Depends(get_store)):
-    return store.get_all()
+async def get_all_products(store):
+    all_products = await store.get_all()
+    return [product for product in all_products.values()]

@@ -27,7 +27,7 @@ async def start_scraper(
     return {"status": "ok", "count" : product_count }
 
 @router.get("/products/")
-def get_stored_products():
-    all_products = get_all_products()
+async def get_stored_products(store = Depends(get_store),):
+    all_products = await get_all_products(store)
     return {"products": all_products}
 

@@ -1,8 +1,18 @@
-version: '3.9'
+version: '3.8'
 
 services:
-  redis:
+  redis-server:
     image: redis
     container_name: atlys-redis-dental
     ports:
       - "6380:6379"
+    
+  fastapi-app:
+    build: .
+    container_name: atlys-server-dental
+    environment:
+      - REDIS_HOST=redis-server
+      - REDIS_PORT=6379
+    ports:
+      - "8000:8000"
+    command: uvicorn app:app --reload --host 0.0.0.0
